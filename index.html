@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Люблю</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marck+Script&family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg:#fffafb;
+    --bg2:#ffeef3;
+    --peach:#ffe3d6;
+    --lilac:#f1e3f7;
+    --pink:#e8799b;
+    --pink-deep:#d4577f;
+    --pink-soft:#f9d3de;
+    --text:#5a3342;
+    --muted:#a07a88;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:linear-gradient(180deg,var(--bg) 0%,#fff3f6 50%,var(--bg) 100%);
+    color:var(--text);
+    font-family:'Montserrat',system-ui,sans-serif;
+    font-weight:300;
+    line-height:1.6;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:'Marck Script','Playfair Display',Georgia,serif;font-weight:400}
+  section{padding:90px 20px;max-width:1000px;margin:0 auto;position:relative}
+
+  #sparkles{position:fixed;inset:0;pointer-events:none;z-index:0}
+  main{position:relative;z-index:1}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:40px 20px;max-width:none;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,227,214,.9), transparent 45%),
+      radial-gradient(circle at 80% 30%, rgba(241,227,247,.9), transparent 45%),
+      radial-gradient(circle at 50% 80%, rgba(249,211,222,.8), transparent 55%),
+      var(--bg);
+  }
+  .hero h1{
+    font-size:clamp(4.5rem,21vw,10.5rem);
+    color:var(--pink);
+    line-height:1.1;
+    text-shadow:0 6px 40px rgba(232,121,155,.35);
+  }
+  .hero p.greet{
+    margin-top:24px;max-width:620px;font-size:clamp(1.1rem,3.6vw,1.5rem);
+    color:var(--text);font-weight:400;
+  }
+  .scroll-hint{margin-top:50px;color:var(--muted);font-size:.85rem;letter-spacing:.2em;text-transform:uppercase;animation:bob 2s infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+  /* ---------- COUNTER ---------- */
+  .counter-wrap{text-align:center}
+  .counter-wrap h2{font-size:clamp(2rem,6vw,2.8rem);margin-bottom:6px;color:var(--pink-deep)}
+  .counter-wrap .sub{color:var(--muted);margin-bottom:34px}
+  .counter{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .box{
+    min-width:100px;padding:20px 10px;border:1px solid rgba(232,121,155,.35);border-radius:22px;
+    background:#fff;box-shadow:0 8px 24px rgba(232,121,155,.14);
+  }
+  .box b{display:block;font-family:'Playfair Display',serif;font-size:clamp(2rem,8vw,3rem);color:var(--pink);font-weight:700}
+  .box span{font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+
+  /* ---------- TOGETHER vs APART ---------- */
+  .split{text-align:center}
+  .split-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:26px}
+  .split-card{
+    padding:28px 16px;border-radius:24px;background:#fff;border:1px solid rgba(232,121,155,.3);
+    box-shadow:0 8px 24px rgba(232,121,155,.14);
+  }
+  .split-card.tog{background:linear-gradient(160deg,#fff,var(--pink-soft));border-color:var(--pink)}
+  .split-card.apart{background:linear-gradient(160deg,#fff,var(--lilac))}
+  .split-card .label{font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .split-card .big{font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(2.4rem,9vw,3.8rem);color:var(--pink-deep);line-height:1.1}
+  .split-card .word{font-size:1rem;color:var(--text);margin-bottom:8px}
+  .split-card .live{font-variant-numeric:tabular-nums;font-size:.95rem;color:var(--pink-deep);font-weight:600;min-height:1.5em}
+  .split-card .small{font-size:.85rem;color:var(--muted)}
+  .bar{display:flex;height:16px;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(232,121,155,.18)}
+  .bar div{height:100%;transition:width 1s}
+  #barApart{background:linear-gradient(90deg,#d8bdea,#e9d8f5)}
+  #barTog{background:linear-gradient(90deg,var(--pink),var(--pink-deep))}
+  .bar-legend{display:flex;justify-content:space-between;color:var(--muted);font-size:.8rem;margin-top:8px}
+
+  /* ---------- TIMELINE ---------- */
+  .section-title{text-align:center;font-size:clamp(2.2rem,7vw,3.4rem);margin-bottom:50px;color:var(--pink-deep)}
+  .section-title::after{content:"♥";display:block;color:var(--pink);font-family:sans-serif;font-size:1rem;margin-top:6px}
+  .timeline{position:relative;padding:10px 0}
+  .timeline::before{
+    content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;
+    background:linear-gradient(var(--pink),rgba(232,121,155,.1));transform:translateX(-50%);
+  }
+  .year{text-align:center;margin:34px 0;position:relative;z-index:2}
+  .year span{
+    display:inline-block;padding:6px 22px;border-radius:30px;background:var(--pink);color:#fff;
+    font-weight:600;letter-spacing:.1em;font-family:'Montserrat',sans-serif;
+  }
+  .event{
+    position:relative;width:50%;padding:0 38px 34px 0;text-align:right;
+    opacity:0;transform:translateY(30px);transition:all .8s ease;
+  }
+  .event.show{opacity:1;transform:none}
+  .event:nth-of-type(even){margin-left:50%;padding:0 0 34px 38px;text-align:left}
+  .event::after{
+    content:"";position:absolute;top:8px;right:-8px;width:16px;height:16px;border-radius:50%;
+    background:#fff;border:3px solid var(--pink);
+  }
+  .event:nth-of-type(even)::after{right:auto;left:-8px}
+  .event .date{color:var(--pink-deep);font-weight:600;letter-spacing:.05em;margin-bottom:6px}
+  .event .card{
+    display:inline-block;background:#fff;border:1px solid rgba(232,121,155,.25);
+    border-radius:20px;padding:14px 18px;font-size:.95rem;box-shadow:0 4px 14px rgba(232,121,155,.1);
+  }
+  .event.big .card{border-color:var(--pink);box-shadow:0 6px 24px rgba(232,121,155,.3);background:#fff5f8}
+
+  /* ---------- MAP ---------- */
+  .map-sub{text-align:center;color:var(--muted);margin:-30px 0 30px}
+  #map{
+    height:430px;border-radius:26px;border:3px solid #fff;
+    box-shadow:0 12px 36px rgba(232,121,155,.28);overflow:hidden;background:var(--bg2);
+  }
+  .map-img{width:100%;display:block;border-radius:26px;box-shadow:0 12px 36px rgba(232,121,155,.28)}
+  .leaflet-tile-pane{filter:sepia(.6) hue-rotate(305deg) saturate(.8) brightness(1.05)}
+  .pin{position:relative;width:44px;height:44px}
+  .pin span{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--pink),var(--pink-deep));color:#fff;font-size:20px;
+    border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;
+    box-shadow:0 6px 16px rgba(212,87,127,.5);
+  }
+  .pin span i{transform:rotate(45deg);font-style:normal}
+  .pin::after{
+    content:"";position:absolute;left:-6px;top:-6px;right:-6px;bottom:-6px;border-radius:50%;
+    border:2px solid rgba(232,121,155,.5);animation:pulse 2.2s infinite;
+  }
+  @keyframes pulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.5);opacity:0}}
+  .leaflet-popup-content-wrapper{border-radius:18px;color:var(--text);font-family:'Montserrat',sans-serif}
+  .leaflet-popup-content b{color:var(--pink-deep);font-size:1.05rem}
+  .places{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+  .place{
+    background:#fff;border:1px solid rgba(232,121,155,.3);border-radius:22px;padding:20px 18px;
+    cursor:pointer;transition:transform .3s,box-shadow .3s;box-shadow:0 6px 18px rgba(232,121,155,.12);
+  }
+  .place:hover{transform:translateY(-4px);box-shadow:0 12px 26px rgba(232,121,155,.25)}
+  .place .num{
+    display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--pink);color:#fff;
+    align-items:center;justify-content:center;font-weight:600;margin-bottom:8px;
+  }
+  .place h3{font-size:1.9rem;color:var(--pink-deep);line-height:1.1;margin-bottom:6px}
+  .place p{font-size:.92rem}
+
+  /* ---------- REASONS (flip cards) ---------- */
+  .hint{text-align:center;color:var(--muted);margin:-30px 0 34px;font-size:.9rem}
+  .reasons{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
+  .flip{perspective:900px;height:130px;cursor:pointer}
+  .flip-inner{position:relative;width:100%;height:100%;transition:transform .7s;transform-style:preserve-3d}
+  .flip.open .flip-inner{transform:rotateY(180deg)}
+  .face{
+    position:absolute;inset:0;backface-visibility:hidden;border-radius:22px;
+    display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;
+  }
+  .front{
+    background:linear-gradient(135deg,#fff,var(--pink-soft));border:1px solid rgba(232,121,155,.45);
+    color:var(--pink);font-size:2rem;font-family:'Playfair Display',serif;
+    box-shadow:0 6px 16px rgba(232,121,155,.15);
+  }
+  .back{
+    background:linear-gradient(135deg,var(--pink),var(--pink-deep));color:#fff;
+    transform:rotateY(180deg);font-weight:600;font-size:.95rem;
+  }
+
+  /* ---------- GALLERY ---------- */
+  .gallery{columns:3 200px;column-gap:12px}
+  .gallery img{
+    width:100%;display:block;margin-bottom:12px;border-radius:18px;cursor:pointer;
+    opacity:0;transform:scale(.96);transition:all .7s ease;border:3px solid #fff;
+    box-shadow:0 6px 18px rgba(232,121,155,.2);
+  }
+  .gallery img.show{opacity:1;transform:none}
+  #lightbox{
+    position:fixed;inset:0;background:rgba(70,30,45,.92);display:none;align-items:center;justify-content:center;
+    z-index:5000;padding:20px;
+  }
+  #lightbox.on{display:flex}
+  #lightbox img{max-width:100%;max-height:92vh;border-radius:14px}
+
+  /* ---------- MUSIC ---------- */
+  .music{text-align:center}
+  .btn{
+    font-family:inherit;font-size:1rem;font-weight:600;letter-spacing:.05em;cursor:pointer;
+    background:transparent;color:var(--pink-deep);border:2px solid var(--pink);border-radius:40px;
+    padding:14px 34px;transition:all .3s;
+  }
+  .btn:hover{background:var(--pink);color:#fff}
+  .music .note{color:var(--muted);font-size:.85rem;margin-top:12px}
+
+  /* ---------- SURPRISE ---------- */
+  .surprise{text-align:center;padding-bottom:140px}
+  .surprise .btn.big{font-size:1.2rem;padding:18px 44px;background:var(--pink);color:#fff;box-shadow:0 8px 30px rgba(232,121,155,.5)}
+  .final{max-height:0;overflow:hidden;opacity:0;transition:all 1.4s ease;margin-top:0}
+  .final.open{max-height:900px;opacity:1;margin-top:44px}
+  .final p.msg{
+    font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(1.3rem,4.8vw,2rem);
+    color:var(--pink-deep);max-width:700px;margin:0 auto 22px;line-height:1.5;
+  }
+  .final p.main-gift{
+    font-weight:600;font-size:clamp(1.2rem,4.5vw,1.7rem);color:var(--text);
+    margin:0 auto 22px;letter-spacing:.03em;
+  }
+  .final p.sign{font-family:'Marck Script',serif;font-size:2rem;color:var(--pink)}
+
+  footer{text-align:center;color:var(--muted);padding:30px;font-size:.8rem}
+
+  @media (max-width:700px){
+    section{padding:70px 16px}
+    .timeline::before{left:14px}
+    .year{text-align:left}
+    .event,.event:nth-of-type(even){
+      width:100%;margin-left:0;padding:0 0 28px 40px;text-align:left;
+    }
+    .event::after,.event:nth-of-type(even)::after{left:6px;right:auto}
+    .box{min-width:78px;padding:14px 6px}
+    .split-grid{grid-template-columns:1fr}
+    .places{grid-template-columns:1fr}
+    #map{height:360px}
+  }
+</style>
+</head>
+<body>
+<canvas id="sparkles"></canvas>
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Люблю</h1>
+    <p class="greet">Привет, любимая, как дела? МЫ ПОЛТОРА ГОДА ВМЕСТЕЕ!!!!!!!</p>
+    <div class="scroll-hint">листай вниз ↓</div>
+  </section>
+
+  <!-- COUNTER -->
+  <section class="counter-wrap">
+    <h2>Мы вместе уже</h2>
+    <p class="sub">с 8 мая, 01:14</p>
+    <div class="counter">
+      <div class="box"><b id="d">0</b><span>дней</span></div>
+      <div class="box"><b id="h">0</b><span>часов</span></div>
+      <div class="box"><b id="m">0</b><span>минут</span></div>
+      <div class="box"><b id="s">0</b><span>секунд</span></div>
+    </div>
+  </section>
+
+  <!-- TOGETHER vs APART -->
+  <section class="split">
+    <h2 class="section-title">Рядом и на расстоянии</h2>
+    <div class="split-grid">
+      <div class="split-card apart">
+        <div class="label">На расстоянии</div>
+        <div class="big" id="apartDays">0</div>
+        <div class="word" id="apartWord">дней</div>
+        <div class="small">пока мы жили в разных городах — и мы это прошли!</div>
+      </div>
+      <div class="split-card tog">
+        <div class="label">Вместе вживую</div>
+        <div class="big" id="togDays">0</div>
+        <div class="word" id="togWord">дней</div>
+        <div class="live" id="togLive"></div>
+        <div class="small">и это число растёт каждую секунду</div>
+      </div>
+    </div>
+    <div class="bar"><div id="barApart"></div><div id="barTog"></div></div>
+    <div class="bar-legend"><span>на расстоянии</span><span>вместе</span></div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section>
+    <h2 class="section-title">Наша история</h2>
+    <div class="timeline">
+
+      <div class="year"><span>2025</span></div>
+
+      <div class="event"><div class="date">4 марта</div><div class="card">Всё началось — наше знакомство.</div></div>
+      <div class="event"><div class="date">2 мая</div><div class="card">Мы начали общаться, моментально разговорились и подружились.</div></div>
+      <div class="event"><div class="date">6 мая</div><div class="card">Наши первые объятия, обожаю этот момент!</div></div>
+      <div class="event big"><div class="date">8 мая, 01:14</div><div class="card">Самая тёплая ночь в моей жизни, самая большая удача, моё признание и твой ответ взаимностью. Никогда ранее в своей жизни я не был так счастлив как в тот момент!!!!!!</div></div>
+      <div class="event big"><div class="date">2 июня</div><div class="card">Твой день рождения и наш первый поцелуй (ещё и под салютом!). Такой радостный возвращался домой, что не описать словами.</div></div>
+      <div class="event"><div class="date">18 августа</div><div class="card">Мы отмечали наши 100 дней. Сейчас пересматривал фотки и чуть ли не плачу — наша последняя прогулка тем летом, как же это было классно, я не могу просто.</div></div>
+      <div class="event"><div class="date">20 августа</div><div class="card">Я уже уезжаю, мы встретились в тот день ненадолго, как же было грустно (я щас заплачу). Просто ужасно печально было уезжать, только-только всё начиналось и сразу испытание в виде расстояния.</div></div>
+      <div class="event"><div class="date">1–6 декабря</div><div class="card">Мой первый приезд в Байконур, первые цветы, подаренные тебе, прекрасные дни.</div></div>
+
+      <div class="year"><span>2026</span></div>
+
+      <div class="event"><div class="date">26 февраля – 26 марта</div><div class="card">Второй и самый долгий приезд в том учебном году, целый месяц были рядом, люблю.</div></div>
+      <div class="event big"><div class="date">5–10 мая</div><div class="card">Мой третий приезд и наша первая годовщина, почти получилось удивить. Люблю тебя до безумия, моё счастье и самая большая ценность.</div></div>
+      <div class="event"><div class="date">1 июля</div><div class="card">Наконец-то летние каникулы, чего только не было этим летом: поездка в другой город, работа вместе, ночёвки.</div></div>
+      <div class="event big"><div class="date">31 августа</div><div class="card">ЕДЕМ В АСТАНУ В ОДНОМ КУПЕЕЕЕЕЕЕЕЕЕЕЕЕ</div></div>
+      <div class="event big"><div class="date">1 сентября</div><div class="card">Мы вместе уже в Астане, расстояние пройдено.</div></div>
+      <div class="event big"><div class="date">Сейчас</div><div class="card">Счастье, всё лучше некуда, пик жизни.</div></div>
+
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section id="mapSection">
+    <h2 class="section-title">Наша карта</h2>
+    <p class="map-sub">места, где мы были вместе — нажимай на сердечки</p>
+    <img id="mapImg" class="map-img" src="images/map.png" alt="Наша карта" style="display:none">
+    <div id="map"></div>
+    <div class="places" id="places"></div>
+  </section>
+
+  <!-- REASONS -->
+  <section>
+    <h2 class="section-title">За что я тебя люблю</h2>
+    <p class="hint">нажимай на карточки</p>
+    <div class="reasons" id="reasons"></div>
+  </section>
+
+  <!-- GALLERY -->
+  <section>
+    <h2 class="section-title">Наши моменты</h2>
+    <div class="gallery" id="gallery"></div>
+  </section>
+  <div id="lightbox"><img alt=""></div>
+
+  <!-- MUSIC -->
+  <section class="music">
+    <h2 class="section-title">Наша песня</h2>
+    <audio id="song" src="music/sweet.mp3" loop preload="none"></audio>
+    <button class="btn" id="playBtn">▶ Включить Cigarettes After Sex — Sweet</button>
+    <p class="note" id="musicNote"></p>
+  </section>
+
+  <!-- SURPRISE -->
+  <section class="surprise">
+    <h2 class="section-title">И напоследок</h2>
+    <button class="btn big" id="surpriseBtn">Открыть сюрприз</button>
+    <div class="final" id="final">
+      <p class="msg">Милая, ты самая невероятная, прекрасная, чудесная, вдохновляющая, любимая, заботливая, добрая, красивая, завораживающая, очаровывающая, стильная, смешная, милая, лучшая девушка на всём свете во все времена.</p>
+      <p class="main-gift">Открывай основной подарок 🎁</p>
+      <p class="sign">С любовью, твой Аян</p>
+    </div>
+  </section>
+
+  <footer>Сделано для тебя</footer>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ================= НАСТРОЙКИ ================= */
+// С какого момента вместе: 8 мая 2025, 01:14
+const START = new Date(2025, 4, 8, 1, 14, 0);
+
+// Периоды, когда вы были вместе вживую. Конец null = до сих пор.
+// Всё остальное время с 8 мая считается "на расстоянии".
+const TOGETHER_SEGMENTS = [
+  ['2025-05-08T01:14:00', '2025-08-21T00:00:00'],  // с признания до отъезда 20 августа
+  ['2025-12-01T00:00:00', '2025-12-07T00:00:00'],  // 1–6 декабря
+  ['2026-02-26T00:00:00', '2026-03-27T00:00:00'],  // 26 февраля – 26 марта
+  ['2026-05-05T00:00:00', '2026-05-11T00:00:00'],  // 5–10 мая
+  ['2026-07-01T00:00:00', null]                    // с 1 июля и до сих пор
+];
+
+// Сколько фото в папке photos/. Назови их 1.jpg, 2.jpg, 3.jpg ... и поставь число тут.
+const PHOTO_COUNT = 20;
+const PHOTO_EXT = 'jpg';
+
+// Места на карте
+const PLACES = [
+  { name:'Байконур', lat:45.62, lng:63.32,
+    text:'Наше начало и самые первые воспоминания. Наша любовь началась здесь, всё было здесь. Каждый приезд был прекрасен, благодаря тебе, моя любовь.' },
+  { name:'Кызылорда', lat:44.85, lng:65.51,
+    text:'Наша первая поездка в другой город. Ночи и дни, проведённые вместе, кинотеатр, аттракционы, скрытие меня и Ерика от твоей мамы, особенные дни.' },
+  { name:'Астана', lat:51.17, lng:71.45,
+    text:'Наша причина расстояния, город, в котором я не хотел гулять. Самый лучший город с момента, как мы живём здесь вместе и видимся каждый день. Из города грусти в город любви.' }
+];
+
+// Карточки: к каждой автоматически добавляется "Люблю " (если текст уже не начинается с "люблю")
+const REASONS = [
+  'тебя','твою душу','твои глаза','твой голос','твои эмоции, заметные на лице','твою заботу',
+  'как ты готовишь','твой характер','твои шутки','как ты придумываешь ситуации','твою улыбку',
+  'каждую частичку тебя','как ты одеваешься','твою фигуру','твою внешность','всю тебя',
+  'наши разговоры','твой стиль общения','как ты любишь меня',
+  'люблю люблю люблю'
+];
+/* ============================================= */
+
+function plural(n, forms){
+  const a = Math.abs(n) % 100, b = a % 10;
+  if(a > 10 && a < 20) return forms[2];
+  if(b > 1 && b < 5) return forms[1];
+  if(b === 1) return forms[0];
+  return forms[2];
+}
+const DAYW = ['день','дня','дней'];
+
+/* ---------- счётчики ---------- */
+function tick(){
+  const now = Date.now();
+
+  // общий счётчик с 8 мая
+  const s = Math.floor(Math.max(0, now - START.getTime()) / 1000);
+  document.getElementById('d').textContent = Math.floor(s/86400);
+  document.getElementById('h').textContent = Math.floor(s%86400/3600);
+  document.getElementById('m').textContent = Math.floor(s%3600/60);
+  document.getElementById('s').textContent = s%60;
+
+  // вместе вживую / на расстоянии
+  let together = 0;
+  TOGETHER_SEGMENTS.forEach(seg=>{
+    const a = new Date(seg[0]).getTime();
+    const b = seg[1] ? new Date(seg[1]).getTime() : now;
+    const end = Math.min(b, now);
+    if(end > a) together += end - a;
+  });
+  const total = Math.max(1, now - START.getTime());
+  const apart = Math.max(0, total - together);
+
+  const tS = Math.floor(together/1000);
+  const td = Math.floor(tS/86400);
+  document.getElementById('togDays').textContent = td;
+  document.getElementById('togWord').textContent = plural(td, DAYW);
+  document.getElementById('togLive').textContent =
+    Math.floor(tS%86400/3600) + ' ч ' + Math.floor(tS%3600/60) + ' мин ' + (tS%60) + ' сек';
+
+  const ad = Math.floor(apart/86400000);
+  document.getElementById('apartDays').textContent = ad;
+  document.getElementById('apartWord').textContent = plural(ad, DAYW);
+
+  document.getElementById('barApart').style.width = (apart/total*100) + '%';
+  document.getElementById('barTog').style.width = (together/total*100) + '%';
+}
+tick(); setInterval(tick,1000);
+
+/* ---------- появление при скролле ---------- */
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('show'); io.unobserve(e.target);} });
+},{threshold:.15});
+document.querySelectorAll('.event').forEach(el=>io.observe(el));
+
+/* ---------- картинка карты (images/map.png), если она есть ---------- */
+const mapImg = document.getElementById('mapImg');
+function useMapImage(){
+  mapImg.style.display = 'block';
+  document.getElementById('map').style.display = 'none';
+  document.getElementById('places').style.display = 'none';
+  document.querySelector('.map-sub').style.display = 'none';
+  document.querySelector('#mapSection .section-title').style.display = 'none';
+}
+if(mapImg.complete && mapImg.naturalWidth) useMapImage();
+else mapImg.addEventListener('load', useMapImage);
+
+/* ---------- карта ---------- */
+const placesBox = document.getElementById('places');
+let map = null, markers = [];
+if(window.L){
+  map = L.map('map',{
+    scrollWheelZoom:false,
+    dragging: !L.Browser.mobile,
+    tap:false
+  });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap, © CARTO', maxZoom:12, subdomains:'abcd'
+  }).addTo(map);
+
+  const pts = PLACES.map(p=>[p.lat,p.lng]);
+  // маршрут Байконур → Кызылорда → Астана
+  L.polyline(pts,{color:'#e8799b',weight:3,opacity:.85,dashArray:'8 10'}).addTo(map);
+
+  PLACES.forEach((p,i)=>{
+    const icon = L.divIcon({
+      className:'',
+      html:'<div class="pin"><span><i>♥</i></span></div>',
+      iconSize:[44,44], iconAnchor:[22,44], popupAnchor:[0,-40]
+    });
+    const m = L.marker([p.lat,p.lng],{icon}).addTo(map);
+    m.bindPopup('<b>'+p.name+'</b><br>'+p.text,{maxWidth:260});
+    markers.push(m);
+  });
+  map.fitBounds(pts,{padding:[50,50]});
+}
+
+PLACES.forEach((p,i)=>{
+  const el = document.createElement('div');
+  el.className = 'place';
+  el.innerHTML = '<div class="num">'+(i+1)+'</div><h3>'+p.name+'</h3><p>'+p.text+'</p>';
+  el.addEventListener('click',()=>{
+    if(map){
+      document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'});
+      map.flyTo([p.lat,p.lng],7,{duration:1.2});
+      setTimeout(()=>markers[i].openPopup(),1300);
+    }
+  });
+  placesBox.appendChild(el);
+});
+
+/* ---------- карточки "за что люблю" ---------- */
+const box = document.getElementById('reasons');
+REASONS.forEach(t=>{
+  const label = t.startsWith('люблю') ? t : 'Люблю ' + t;
+  const el = document.createElement('div');
+  el.className = 'flip';
+  el.innerHTML = '<div class="flip-inner"><div class="face front">♥</div><div class="face back">'+label+'</div></div>';
+  el.addEventListener('click',()=>el.classList.toggle('open'));
+  box.appendChild(el);
+});
+
+/* ---------- галерея ---------- */
+const gal = document.getElementById('gallery');
+const lb = document.getElementById('lightbox');
+const lbImg = lb.querySelector('img');
+for(let i=1;i<=PHOTO_COUNT;i++){
+  const img = document.createElement('img');
+  img.src = 'photos/'+i+'.'+PHOTO_EXT;
+  img.loading = 'lazy';
+  img.alt = 'Фото '+i;
+  img.onerror = ()=>img.remove();
+  img.onclick = ()=>{ lbImg.src = img.src; lb.classList.add('on'); };
+  gal.appendChild(img);
+  io.observe(img);
+}
+lb.addEventListener('click',()=>lb.classList.remove('on'));
+
+/* ---------- музыка ---------- */
+const song = document.getElementById('song');
+const playBtn = document.getElementById('playBtn');
+const note = document.getElementById('musicNote');
+playBtn.addEventListener('click',()=>{
+  if(song.paused){
+    song.play().then(()=>{ playBtn.textContent='⏸ Пауза'; })
+      .catch(()=>{ note.textContent='Не нашёл файл music/sweet.mp3 — положи его в папку music.'; });
+  } else {
+    song.pause(); playBtn.textContent='▶ Включить Cigarettes After Sex — Sweet';
+  }
+});
+
+/* ---------- сюрприз ---------- */
+document.getElementById('surpriseBtn').addEventListener('click',e=>{
+  document.getElementById('final').classList.add('open');
+  e.target.style.display='none';
+  burst();
+  setTimeout(()=>document.getElementById('final').scrollIntoView({behavior:'smooth',block:'center'}),400);
+});
+
+/* ---------- летящие сердечки на фоне ---------- */
+const cv = document.getElementById('sparkles');
+const ctx = cv.getContext('2d');
+let W,H,hearts=[];
+function resize(){ W=cv.width=innerWidth; H=cv.height=innerHeight; }
+resize(); addEventListener('resize',resize);
+function mk(init){
+  return {
+    x:Math.random()*W, y: init ? Math.random()*H : H+20,
+    size:Math.random()*12+8, v:Math.random()*.45+.15,
+    a:Math.random()*.25+.1, ph:Math.random()*6.28, sw:Math.random()*.6+.2
+  };
+}
+for(let i=0;i<26;i++) hearts.push(mk(true));
+let bursts=[];
+function burst(){
+  for(let i=0;i<110;i++){
+    const ang=Math.random()*Math.PI*2, sp=Math.random()*7+2;
+    bursts.push({x:W/2,y:H/2,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-2,size:Math.random()*14+8,life:1});
+  }
+}
+(function loop(){
+  ctx.clearRect(0,0,W,H);
+  ctx.textAlign='center';
+  hearts.forEach((h,i)=>{
+    h.y -= h.v; h.ph += .01;
+    if(h.y < -20){ hearts[i]=mk(false); return; }
+    ctx.fillStyle='rgba(232,121,155,'+h.a+')';
+    ctx.font=h.size+'px sans-serif';
+    ctx.fillText('♥', h.x+Math.sin(h.ph)*14*h.sw, h.y);
+  });
+  bursts=bursts.filter(b=>b.life>0);
+  bursts.forEach(b=>{
+    b.x+=b.vx; b.y+=b.vy; b.vy+=.12; b.life-=.012;
+    ctx.fillStyle='rgba(232,121,155,'+Math.max(b.life,0)+')';
+    ctx.font=b.size+'px sans-serif';
+    ctx.fillText('♥', b.x, b.y);
+  });
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
